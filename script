@@ -1,0 +1,15 @@
+#!/bin/bash
+LOG_FILE="/var/log/ddns.log"
+ZONE_FILE="/etc/bind/zone.com"
+
+CURRENT_IP="$(dig +short myip.opendns.com @resolver4.opendns.com)"
+LAST_IP="$(tail -1 $LOG_FILE | awk -F, '{print $2}')"
+
+if [ "$CURRENT_IPV4" = "$LAST_IPV4" ]; then
+    echo "IP has not changed ($CURRENT_IP)"
+else
+    echo "IP has changed: $CURRENT_IPV4"
+    echo "$(date),$CURRENT_IP" >> "$LOG_FILE"
+    sed -i "s/$LAST_IP/$CURRENT_IP/g" $ZONE_FILE 
+    service bind9 restart
+fi
