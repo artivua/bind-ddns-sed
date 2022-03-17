@@ -22,8 +22,7 @@ echo "current ip: $CURRENT_IP"
 echo "   last ip: $LAST_IP"
 
 if [ "$CURRENT_IP" = "$LAST_IP" ]; then
-    echo "ip not changed"
-    echo "work finished"
+    echo "ip not changed - no need to update"
 else
     echo "ip changed"
     echo "starting dns update"
