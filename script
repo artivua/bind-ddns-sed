@@ -1,15 +1,40 @@
 #!/bin/bash
+#define files
 LOG_FILE="/var/log/ddns.log"
-ZONE_FILE="/etc/bind/zone.com"
+ZONE_FILE1="/etc/bind/domain.com.zone"
+#ZONE_FILE2="/etc/bind/domaincorp.org.zone"
+#ZONE_FILE3="/etc/bind/site.domain.com.zone"
 
-CURRENT_IP="$(dig +short myip.opendns.com @resolver4.opendns.com)"
-LAST_IP="$(tail -1 $LOG_FILE | awk -F, '{print $2}')"
-
-if [ "$CURRENT_IPV4" = "$LAST_IPV4" ]; then
-    echo "IP has not changed ($CURRENT_IP)"
+#check internet connection
+wget -q --spider http://google.com
+echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "internet connecton ok"
 else
-    echo "IP has changed: $CURRENT_IPV4"
-    echo "$(date),$CURRENT_IP" >> "$LOG_FILE"
-    sed -i "s/$LAST_IP/$CURRENT_IP/g" $ZONE_FILE 
+    echo "no internet connection"
+    exit 0
+fi
+
+#get ip
+CURRENT_IP="$(dig +short myip.opendns.com @resolver4.opendns.com)"
+LAST_IP="$(tail -1 $LOG_FILE | awk -F, '{print $1}')"
+echo "current ip: $CURRENT_IP"
+echo "   last ip: $LAST_IP"
+
+if [ "$CURRENT_IP" = "$LAST_IP" ]; then
+    echo "ip not changed"
+    echo "work finished"
+else
+    echo "ip changed"
+    echo "starting dns update"
+    curl https://freedns.afraid.org/dynamic/update.php?Q3FoTFJnR29aMFlnTVRxbmRqN1ROS0pBOjE5NTEzMDE5
+    echo "$CURRENT_IP" >> "$LOG_FILE"
+    echo "ip logged to $LOG_FILE"
+    sed -i "s/$LAST_IP/$CURRENT_IP/g" $ZONE_FILE1
+#    sed -i "s/$LAST_IP/$CURRENT_IP/g" $ZONE_FILE2
+#    sed -i "s/$LAST_IP/$CURRENT_IP/g" $ZONE_FILE3
+    echo "zones updated"
     service bind9 restart
+    echo "bind restarted"
+    echo "dns update finished"
 fi
